@@ -1,0 +1,3 @@
+RewriteEngine On
+RewriteRule ^cards/([a-zA-Z_-]*)$ cards.php$1 [NC,L]
+RewriteRule ^sets/([a-zA-Z_-]*)$ sets.php$1 [NC,L]
