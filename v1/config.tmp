@@ -6,7 +6,7 @@
     $DB_PASS = "cardkingdom";
 
     # API info.
-    $API_NAME = "1.0.0";
+    $API_VERSION = "1.0.0";
     $API_NAME = "cardkingdom-api";
 
     # Disable error reporting

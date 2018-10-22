@@ -6,90 +6,106 @@
     */
 
     header("Content-Type:application/json");
-    require "config.php";
-    require "misc.php";
-
-    # Get page
-    $page = 0;
-    if(!empty($_GET['page'])) {
-        $page = (int)$_GET['page'];
-    }
-
-    # Array for cards
-    $cards = [];
+    require "../config.php";
+    require "../misc.php";
 
     # Create connection
     $conn = mysqli_connect($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
-    
-    # Charset to handle unicode
-    $conn->set_charset('utf8mb4');
-    mysqli_set_charset($conn, 'utf8mb4');
 
     # Check connection
     if ($conn) {
 
-        # UUID direct search
-        if(!empty($_GET['uuid']))
+        # Charset to handle unicode
+        $conn->set_charset('utf8mb4');
+        mysqli_set_charset($conn, 'utf8mb4');
+
+        # Get API token
+        $token = "";
+        if(!empty($_GET['token']))
         {
-            # Card UUID
-            $card_uuid = build_str(clean_str($conn, $_GET['uuid']));
+            $token = clean_str($conn, $_GET['token']);
+        }
 
-            # Prepare and run query
-            $sql_query = "SELECT * FROM sets_cards WHERE uuid = ".$card_uuid." ORDER BY setId, uuid LIMIT 10 OFFSET ".($page*10);
+        # Validate API token
+        if (validate_api_token($conn, $token))
+        {
+            # Get page
+            $page = 0;
+            if(!empty($_GET['page'])) {
+                $page = (int)$_GET['page'];
+            }
 
-            # Return cards matching query
-            response(200, "ok", get_cards($sql_query, $conn, $cards));
+            # Array for cards
+            $cards = [];
+
+            # UUID direct search
+            if(!empty($_GET['uuid']))
+            {
+                # Card UUID
+                $card_uuid = build_str(clean_str($conn, $_GET['uuid']));
+
+                # Prepare and run query
+                $sql_query = "SELECT * FROM sets_cards WHERE uuid = ".$card_uuid." ORDER BY setId, uuid LIMIT 10 OFFSET ".($page*10);
+
+                # Return cards matching query
+                response(200, "ok", get_cards($sql_query, $conn, $cards));
+            }
+            else
+            {
+                # Card name and set ID search
+                if(!empty($_GET['name']) && !empty($_GET['set']))
+                {
+                    # Card name
+                    $card_name = strtoupper(clean_str($conn, $_GET['name']));
+
+                    # Set ID
+                    $set_id = strtoupper(build_str(clean_str($conn, $_GET['set'])));
+
+                    # Prepare and run query
+                    $sql_query = "SELECT * FROM sets_cards WHERE upper(name) LIKE '%".$card_name."%' AND setId = ".$set_id." ORDER BY setId, uuid LIMIT 10 OFFSET ".($page*10);
+
+                    # Return cards matching query
+                    response(200, "ok", get_cards($sql_query, $conn, $cards));
+                }
+                # Card name search
+                elseif(!empty($_GET['name']))
+                {
+                    # Card name
+                    $card_name = strtoupper(clean_str($conn, $_GET['name']));
+
+                    # Prepare and run query
+                    $sql_query = "SELECT * FROM sets_cards WHERE upper(name) LIKE '%".$card_name."%' ORDER BY setId, uuid LIMIT 10 OFFSET ".($page*10);
+
+                    # Return cards matching query
+                    response(200, "ok", get_cards($sql_query, $conn, $cards));
+                }
+                # Set ID search
+                elseif(!empty($_GET['set']))
+                {
+                    # Set ID
+                    $set_id = strtoupper(build_str(clean_str($conn, $_GET['set'])));
+
+                    # Prepare and run query
+                    $sql_query = "SELECT * FROM sets_cards WHERE setId = ".$set_id." ORDER BY setId, uuid LIMIT 10 OFFSET ".($page*10);
+
+                    # Return cards matching query
+                    response(200, "ok", get_cards($sql_query, $conn, $cards));
+                }
+                # Get all cards (limited to page)
+                else
+                {
+                    # Prepare and run query
+                    $sql_query = "SELECT * FROM sets_cards ORDER BY setId, uuid LIMIT 10 OFFSET ".($page*10);
+
+                    # Return cards matching query
+                    response(200, "ok", get_cards($sql_query, $conn, $cards));
+                }
+            }
         }
         else
         {
-            # Card name and set ID search
-            if(!empty($_GET['name']) && !empty($_GET['set']))
-            {
-                # Card name
-                $card_name = strtoupper(clean_str($conn, $_GET['name']));
-
-                # Set ID
-                $set_id = strtoupper(build_str(clean_str($conn, $_GET['set'])));
-
-                # Prepare and run query
-                $sql_query = "SELECT * FROM sets_cards WHERE upper(name) LIKE '%".$card_name."%' AND setId = ".$set_id." ORDER BY setId, uuid LIMIT 10 OFFSET ".($page*10);
-
-                # Return cards matching query
-                response(200, "ok", get_cards($sql_query, $conn, $cards));
-            }
-            # Card name search
-            elseif(!empty($_GET['name']))
-            {
-                # Card name
-                $card_name = strtoupper(clean_str($conn, $_GET['name']));
-
-                # Prepare and run query
-                $sql_query = "SELECT * FROM sets_cards WHERE upper(name) LIKE '%".$card_name."%' ORDER BY setId, uuid LIMIT 10 OFFSET ".($page*10);
-
-                # Return cards matching query
-                response(200, "ok", get_cards($sql_query, $conn, $cards));
-            }
-            # Set ID search
-            elseif(!empty($_GET['set']))
-            {
-                # Set ID
-                $set_id = strtoupper(build_str(clean_str($conn, $_GET['set'])));
-
-                # Prepare and run query
-                $sql_query = "SELECT * FROM sets_cards WHERE setId = ".$set_id." ORDER BY setId, uuid LIMIT 10 OFFSET ".($page*10);
-
-                # Return cards matching query
-                response(200, "ok", get_cards($sql_query, $conn, $cards));
-            }
-            # Get all cards (limited to page)
-            else
-            {
-                # Prepare and run query
-                $sql_query = "SELECT * FROM sets_cards ORDER BY setId, uuid LIMIT 10 OFFSET ".($page*10);
-
-                # Return cards matching query
-                response(200, "ok", get_cards($sql_query, $conn, $cards));
-            }
+            # Return error
+            response(403, "Unauthorized or invalid API token", NULL);
         }
     }
     else

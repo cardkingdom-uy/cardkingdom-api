@@ -6,63 +6,80 @@
     */
 
     header("Content-Type:application/json");
-    require "config.php";
-    require "misc.php";
-
-    # Get page
-    $page = 0;
-    if(!empty($_GET['page'])) {
-        $page = (int)$_GET['page'];
-    }
-
-    # Array for sets
-    $sets = [];
+    require "../config.php";
+    require "../misc.php";
 
     # Create connection
     $conn = mysqli_connect($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
-    
-    # Charset to handle unicode
-    $conn->set_charset('utf8mb4');
-    mysqli_set_charset($conn, 'utf8mb4');
 
     # Check connection
     if ($conn) {
 
-        # set ID direct search
-        if(!empty($_GET['set']))
+        # Charset to handle unicode
+        $conn->set_charset('utf8mb4');
+        mysqli_set_charset($conn, 'utf8mb4');
+
+        # Get API token
+        $token = "";
+        if(!empty($_GET['token']))
         {
-            # Set ID
-            $set_id = strtoupper(build_str(clean_str($conn, $_GET['set'])));
+            $token = clean_str($conn, $_GET['token']);
+        }
 
-            # Prepare and run query
-            $sql_query = "SELECT * FROM sets WHERE setId = ".$set_id." ORDER BY setId, name LIMIT 10 OFFSET ".($page*10);
+        # Validate API token
+        if (validate_api_token($conn, $token))
+        {
 
-            # Return cards matching query
-            response(200, "ok", get_sets($sql_query, $conn, $sets));
+            # Get page
+            $page = 0;
+            if(!empty($_GET['page'])) {
+                $page = (int)$_GET['page'];
+            }
+
+            # Array for sets
+            $sets = [];
+
+            # set ID direct search
+            if(!empty($_GET['set']))
+            {
+                # Set ID
+                $set_id = strtoupper(build_str(clean_str($conn, $_GET['set'])));
+
+                # Prepare and run query
+                $sql_query = "SELECT * FROM sets WHERE setId = ".$set_id." ORDER BY setId, name LIMIT 10 OFFSET ".($page*10);
+
+                # Return cards matching query
+                response(200, "ok", get_sets($sql_query, $conn, $sets));
+            }
+            else
+            {
+                # Set name search
+                if(!empty($_GET['name']))
+                {
+                    # Set name
+                    $set_name = strtoupper(clean_str($conn, $_GET['name']));
+
+                    # Prepare and run query
+                    $sql_query = "SELECT * FROM sets WHERE upper(name) LIKE '%".$set_name."%' ORDER BY setId, name LIMIT 10 OFFSET ".($page*10);
+
+                    # Return cards matching query
+                    response(200, "ok", get_sets($sql_query, $conn, $sets));
+                }
+                # Get all sets (limited to page)
+                else
+                {
+                    # Prepare and run query
+                    $sql_query = "SELECT * FROM sets ORDER BY setId, name LIMIT 10 OFFSET ".($page*10);
+
+                    # Return cards matching query
+                    response(200, "ok", get_sets($sql_query, $conn, $sets));
+                }
+            }
         }
         else
         {
-            # Set name search
-            if(!empty($_GET['name']))
-            {
-                # Set name
-                $set_name = strtoupper(clean_str($conn, $_GET['name']));
-
-                # Prepare and run query
-                $sql_query = "SELECT * FROM sets WHERE upper(name) LIKE '%".$set_name."%' ORDER BY setId, name LIMIT 10 OFFSET ".($page*10);
-
-                # Return cards matching query
-                response(200, "ok", get_sets($sql_query, $conn, $sets));
-            }
-            # Get all sets (limited to page)
-            else
-            {
-                # Prepare and run query
-                $sql_query = "SELECT * FROM sets ORDER BY setId, name LIMIT 10 OFFSET ".($page*10);
-
-                # Return cards matching query
-                response(200, "ok", get_sets($sql_query, $conn, $sets));
-            }
+            # Return error
+            response(403, "Unauthorized or invalid API token", NULL);
         }
     }
     else
