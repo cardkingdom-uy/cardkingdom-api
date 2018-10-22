@@ -1,9 +1,13 @@
 <?php
-    // General config.
+    # General config.
     $DB_HOST = "localhost";
     $DB_NAME = "cardkingdom";
     $DB_USER = "cardkingdom";
     $DB_PASS = "cardkingdom";
+
+    # API info.
+    $API_NAME = "1.0.0";
+    $API_NAME = "cardkingdom-api";
 
     # Disable error reporting
     error_reporting(0);
