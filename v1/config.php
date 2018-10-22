@@ -5,6 +5,10 @@
     $DB_USER = "cardkingdom";
     $DB_PASS = "cardkingdom";
 
+    # API info.
+    $API_VERSION = "1.0.0";
+    $API_NAME = "cardkingdom-api";
+
     # Disable error reporting
     error_reporting(0);
 ?>
