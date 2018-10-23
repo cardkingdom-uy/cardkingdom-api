@@ -450,7 +450,7 @@
             while ($row = mysqli_fetch_assoc($result))
             {
                 # Build all four prices (near mint, excellent, very good and good)
-                $current_price = [$row["nm_price"], $row["ex_price"], $row["vg_price"], $row["g_price"]];
+                $current_price = [floatval($row["nm_price"]), floatval($row["ex_price"]), floatval($row["vg_price"]), floatval($row["g_price"])];
                 
                 # Update array
                 $prices[$row["source"]] = $current_price;
